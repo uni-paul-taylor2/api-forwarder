@@ -1,4 +1,3 @@
-let fetch=require('node-fetch')
 let http=require('node:http'), https=require('node:https')
 let ab_map=[], str_map={__proto__:null}
 for(let i=0;i<256;i++){
@@ -27,12 +26,25 @@ async function bufferChunk(stream,maxLength=Infinity){
     stream.on('error', reject)
   })
 }
-function requestURL(url,headers={},method="GET",protocol="https"){
-  const {hostname}=new URL(url.startsWith('http')?url:protocol+url);
+function bufferChunkOLD(stream){
+  return new Promise((resolve,reject)=>{
+    var temp=Buffer.alloc(0) //resolves with full buffer at end
+    stream.on('data',chunk=> temp=Buffer.concat([temp,chunk]) )
+    stream.on('end',()=>resolve(temp))
+    stream.on('error',(err)=>reject(err))
+  })
+}
+async function requestURL(url,req,res,data=""){
+  try{var {hostname,protocol,pathname,search}=new URL(url), {headers,method}=req}
+  catch{return "INVALID URL"}
   if(headers.host) headers.host=hostname;
   return new Promise(resolve=>{
-    let options={hostname, port:protocol==="https"?443:80, path:'/', method, headers}
-    let request=(protocol==="https"?https:http).request(options,response=> bufferChunk(response).then(resolve) )
+    let options={hostname, port:protocol==="https:"?443:80, path:pathname+search, method, headers}
+    let request=(protocol==="https:"?https:http).request(options,async function respond(response){
+      if(headers.origin) response.headers['Access-Control-Allow-Origin']=req.headers.origin;
+      res.writeHead(response.statusCode,response.headers);
+      (response.headers['content-encoding']?bufferChunkOLD:bufferChunk)(response).then(resolve)
+    })
     request.write(data)
     request.end()
   })
@@ -43,14 +55,6 @@ async function qfetch(url,headers={},method="GET",returnType='json'){
 };
 http.createServer(async(req,res)=>{try{
   let url=req.url[0]==='/'?req.url.substr(1):req.url
-  //if(!url.includes("api")) return res.end("wow");
   if(url.length<1) return res.end("pinged successfully");
-  res.writeHead(200,{'Access-Control-Allow-Origin':req.headers.origin})
-  //console.log(req.headers)
-  //return res.end(await requestURL(url,req.headers,req.method))
-  delete req.headers.host
-  delete req.headers.origin
-  delete req.headers.referer
-  return res.end(await qfetch(url,req.headers,req.method,'text'))
-  //return res.end(await qfetch(url,{},"GET",'text'))
+  return res.end(await requestURL("https://"+url,req,res))
 }catch(err){console.log(err)}}).listen(process.env.PORT||8080)
