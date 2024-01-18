@@ -45,6 +45,7 @@ async function requestURL(url,req,res,data=""){
       res.writeHead(response.statusCode,response.headers);
       (response.headers['content-encoding']?bufferChunkOLD:bufferChunk)(response).then(resolve)
     })
+    request.on('error',function(error){ resolve(error.code||error.message||error) })
     request.write(data)
     request.end()
   })
