@@ -49,10 +49,6 @@ async function requestURL(url,req,res,data=""){
     request.end()
   })
 }
-async function qfetch(url,headers={},method="GET",returnType='json'){
-  let options={method,headers};
-  return await(await fetch("https://"+url,options))[returnType]();
-};
 http.createServer(async(req,res)=>{try{
   let url=req.url[0]==='/'?req.url.substr(1):req.url
   if(url.length<1) return res.end("pinged successfully");
