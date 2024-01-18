@@ -1,0 +1,18 @@
+{
+  "name": "http-request-forwarder",
+  "version": "1.0.0",
+  "description": "Forwards data for a request for you, for when your browser has annoying CORS issues",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"No tests needed\" && exit 0",
+    "start": "node ."
+  },
+  "keywords": [
+    "http",
+    "https",
+    "server",
+    "forwarding"
+  ],
+  "author": "Paul R. Y. Taylor",
+  "license": "Apache-2.0"
+}
