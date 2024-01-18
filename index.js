@@ -5,13 +5,13 @@ for(let i=0;i<256;i++){
   str_map[ab_map[i]]=i;
 }
 function str2ab(str) {
-  let buf=new ArrayBuffer(str.length), bufView=new Uint8Array(buf);
-  for (let i=0;i<str.length;i++) bufView[i]=str_map[str[i]];
+  const buf=new Uint8Array(str.length);
+  for (let i=0;i<str.length;i++) buf[i]=str_map[str[i]];
   return buf;
 }
 function ab2str(buf) {
-  let arr=new Uint8Array(buf), chars="";
-  for(let i=0;i<arr.length;i++) chars+=ab_map[arr[i]];
+  let chars="";
+  for(let i=0;i<buf.length;i++) chars+=ab_map[buf[i]];
   return chars;
 }
 async function bufferChunk(stream,maxLength=Infinity){
@@ -22,16 +22,8 @@ async function bufferChunk(stream,maxLength=Infinity){
         return reject("data length exceeded");
       temp+=ab2str(chunk)
     })
-    stream.on('end', function(){resolve(temp)})
+    stream.on('end', function(){ resolve(str2ab(temp)) })
     stream.on('error', reject)
-  })
-}
-function bufferChunkOLD(stream){
-  return new Promise((resolve,reject)=>{
-    var temp=Buffer.alloc(0) //resolves with full buffer at end
-    stream.on('data',chunk=> temp=Buffer.concat([temp,chunk]) )
-    stream.on('end',()=>resolve(temp))
-    stream.on('error',(err)=>reject(err))
   })
 }
 async function requestURL(url,req,res,data=""){
@@ -43,7 +35,7 @@ async function requestURL(url,req,res,data=""){
     let request=(protocol==="https:"?https:http).request(options,async function respond(response){
       if(headers.origin) response.headers['Access-Control-Allow-Origin']=req.headers.origin;
       res.writeHead(response.statusCode,response.headers);
-      (response.headers['content-encoding']?bufferChunkOLD:bufferChunk)(response).then(resolve)
+      resolve(  await bufferChunk(response)  );
     })
     request.on('error',function(error){ resolve(error.code||error.message||error) })
     request.write(data)
